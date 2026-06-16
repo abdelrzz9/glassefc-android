@@ -1,59 +1,150 @@
-# Glassefc Android
+# Glassefc Android SDK
 
-A Kotlin Android library that protects freelance work by locking the app until payment is confirmed. Transparent, agreed upfront in the contract — not a hack, a professional payment gate.
+A production-ready Android SDK for freelance payment protection. Lock app access until payment is confirmed — transparent, agreed upfront in the contract.
 
-This is the Android/Kotlin equivalent of the [Glassefc Swift Package](https://github.com/wailbentafat/glassefc).
-
----
-
-## How it works
-
-1. You fork this repo and fill in your info in the config
-2. You add the library to the client's project
-3. Client's code shows only `GlassEffect { }` — nothing revealing
-4. App is locked on launch until you flip `isUnlocked = true` after payment
+```
+implementation("com.github.your-username:glassefc-android:1.0.0")
+```
 
 ---
 
-## Setup (after forking)
+## Quick Start
 
-Edit one file — `glassefc/src/main/kotlin/com/glassefc/GlassEffectConfig.kt`:
+### 1. Initialize the SDK
+
+In your `Application` or `Activity`:
 
 ```kotlin
-object GlassEffectConfig {
-    var isUnlocked = false          // → true after payment
-    var freelancer = "Your Name"
-    var project    = "Project Name"
-    var amount     = "500 USD"
-    var deadline   = "2025-01-01"   // ISO format: yyyy-MM-dd
+import com.glassefc.sdk.Glassefc
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        Glassefc.init(
+            context = applicationContext,
+            licenseKey = "YOUR_LICENSE_KEY_HERE",
+            freelancer = "Your Name",
+            project = "Client Project",
+            amount = "500 USD",
+            deadline = "2025-01-01"       // yyyy-MM-dd format
+        )
+
+        setContent {
+            Glassefc {
+                // Your app content here
+                AppContent()
+            }
+        }
+    }
+}
+```
+
+### 2. Wrap Your App Content
+
+Replace your content root with `Glassefc { }`:
+
+```kotlin
+// Before
+setContent { AppContent() }
+
+// After
+setContent {
+    Glassefc {
+        AppContent()
+    }
+}
+```
+
+The SDK automatically:
+- **Shows a lock overlay** when the app is not activated
+- **Renders your content** when activated
+- **Displays overdue warnings** past the deadline
+
+---
+
+## Activation
+
+### Auto-activation (default)
+
+On first launch, the SDK auto-activates using the embedded license key. The activation is stored persistently using **EncryptedSharedPreferences**.
+
+### Runtime activation
+
+```kotlin
+Glassefc.activate("ACTIVATION_CODE")
+```
+
+### Check status
+
+```kotlin
+if (Glassefc.isActivated()) {
+    // App is unlocked
+}
+
+if (Glassefc.isLicensed()) {
+    // License key is valid and matches activation
 }
 ```
 
 ---
 
-## Add to client project
+## SDK Architecture
 
-### Option A — Local module
-
-Copy the `glassefc/` directory into the client's project. Add to `settings.gradle.kts`:
-
-```kotlin
-include(":glassefc")
+```
+com.glassefc.sdk/
+├── Glassefc.kt                  # Public API (single entry point)
+├── internal/
+│   ├── GlassefcConfig.kt        # Immutable configuration
+│   ├── GlassEffectState.kt      # State management
+│   ├── LicenseManager.kt        # License validation & activation
+│   ├── SecureStorage.kt         # EncryptedSharedPreferences storage
+│   ├── AntiTamper.kt            # Debug detection & tamper checks
+│   └── ui/
+│       ├── GlassEffectComposable.kt   # Compose lock overlay
+│       ├── GlassEffectDefaults.kt     # UI constants
+│       └── GlassEffectLayout.kt       # View-based overlay
 ```
 
-Add to the app's `build.gradle.kts`:
+---
 
-```kotlin
-dependencies {
-    implementation(project(":glassefc"))
-}
-```
+## API Reference
 
-### Option B — JitPack (recommended for remote hosting)
+| Method | Description |
+|--------|-------------|
+| `Glassefc.init(...)` | Initialize the SDK with your license key and project details. |
+| `Glassefc.activate(key)` | Activate the SDK with a license key at runtime. |
+| `Glassefc.isActivated()` | Returns `true` if the SDK is currently activated. |
+| `Glassefc.isLicensed()` | Returns `true` if the current license key matches the stored activation. |
+| `Glassefc { ... }` | Composable wrapper — shows content if activated, lock overlay otherwise. |
 
-1. Push your fork to GitHub
-2. [Create a JitPack release](https://jitpack.io/#your-username/glassefc-android)
-3. Add JitPack repository and dependency:
+### init() Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `context` | ✓ | Application or Activity context |
+| `licenseKey` | ✓ | Your secret license key (min 16 chars, alphanumeric + hyphens) |
+| `freelancer` | ✓ | Your name or business name |
+| `project` | ✓ | Project name displayed on the lock screen |
+| `amount` | ✓ | Payment amount displayed on the lock screen |
+| `deadline` | ✓ | Payment deadline in `yyyy-MM-dd` format |
+| `enableAntiTamper` | | Enable debug build detection (default: `true`) |
+| `licenseServerUrl` | | Optional backend URL for remote license validation |
+
+---
+
+## Requirements
+
+- Android API 26+
+- Kotlin 1.9+
+- Jetpack Compose BOM 2024+ (provided by host app)
+- No backend required (optional for remote validation)
+
+---
+
+## Adding to Your Project
+
+### JitPack
 
 ```kotlin
 // settings.gradle.kts
@@ -65,99 +156,36 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.your-username:glassefc-android:Tag")
+    implementation("com.github.your-username:glassefc-android:1.0.0")
 }
 ```
 
----
-
-## Integration (one line)
-
-### Jetpack Compose
+### Local Module
 
 ```kotlin
-import com.glassefc.GlassEffect
+// settings.gradle.kts
+include(":glassefc")
 
-@Composable
-fun MyApp() {
-    GlassEffect {
-        // your composable content here
-    }
-}
-```
-
-In your `MainActivity`:
-
-```kotlin
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            GlassEffect {
-                Greeting()
-            }
-        }
-    }
-}
-```
-
-### XML / View-based apps
-
-```kotlin
-import com.glassefc.GlassEffectLayout
-
-class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        GlassEffectLayout.wrap(this)  // overlay lock screen
-    }
+// app/build.gradle.kts
+dependencies {
+    implementation(project(":glassefc"))
 }
 ```
 
 ---
 
-## Unlocking after payment
+## Security
 
-1. Go to your fork on GitHub
-2. Open `GlassEffectConfig.kt`
-3. Change `isUnlocked = false` → `isUnlocked = true`
-4. Push
-5. For local module: client pulls the latest code and rebuilds
-6. For JitPack: create a new release; client updates the version tag
-
-App unlocks immediately.
-
----
-
-## Deadline handling
-
-- Before deadline → full-screen black overlay, lock icon, days remaining shown
-- After deadline → full-screen dark red overlay, warning icon, "Payment Overdue" message — automatic, no code change needed
+| Feature | Description |
+|---------|-------------|
+| **Encrypted storage** | Activation state stored in EncryptedSharedPreferences (AES-256) |
+| **License hashing** | License keys stored as SHA-256 hashes, never in plaintext |
+| **Debug detection** | Optionally locks the app when running on debug builds |
+| **ProGuard ready** | Consumer ProGuard rules included |
+| **No network required** | Works fully offline |
 
 ---
 
-## Requirements
+## License
 
-- Android API 26+
-- Kotlin 1.9+
-- Jetpack Compose BOM 2024+ (optional — only needed if using Compose integration)
-- No external dependencies beyond AndroidX
-
----
-
-## Project structure
-
-```
-glassefc/                     # Library module
-├── build.gradle.kts
-└── src/main/kotlin/com/glassefc/
-    ├── GlassEffectConfig.kt    # Config — edit this
-    ├── GlassEffect.kt          # Compose integration
-    └── GlassEffectLayout.kt    # XML / View integration
-
-app/                          # Sample app
-├── build.gradle.kts
-└── src/main/kotlin/com/glassefc/sample/
-    └── MainActivity.kt
-```
+This SDK is licensed under the MIT License.

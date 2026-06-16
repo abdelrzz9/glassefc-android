@@ -1,4 +1,4 @@
-package com.glassefc
+package com.glassefc.sdk.internal.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,25 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-@Composable
-fun GlassEffect(
-    config: GlassEffectConfig = GlassEffectConfig,
-    content: @Composable () -> Unit
-) {
-    if (config.isUnlocked()) {
-        content()
-    } else {
-        GlassEffectOverlay(
-            isOverdue = config.isOverdue,
-            daysRemaining = config.daysRemaining,
-            formattedDeadline = config.formattedDeadline,
-            project = config.project,
-            amount = config.amount,
-            freelancer = config.freelancer
-        )
-    }
-}
 
 @Composable
 internal fun GlassEffectOverlay(

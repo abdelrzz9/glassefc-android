@@ -1,4 +1,4 @@
-package com.glassefc
+package com.glassefc.sdk.internal.ui
 
 import android.app.Activity
 import android.content.Context
@@ -12,24 +12,26 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
+import com.glassefc.sdk.internal.GlassefcConfig
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.Locale
 
-class GlassEffectLayout(context: Context) : FrameLayout(context) {
+internal class GlassEffectLayout(context: Context) : FrameLayout(context) {
 
     private var attached = false
 
-    fun install() {
-        if (attached || GlassEffectConfig.isUnlocked()) return
-        buildLockScreen()
-        attached = true
-    }
-
-    private fun buildLockScreen() {
-        val config = GlassEffectConfig
-        val isOverdue = config.isOverdue
+    fun install(config: GlassefcConfig) {
+        if (attached) return
+        val isOverdue = LocalDate.now() > config.deadline
+        val daysRemaining = LocalDate.now().until(config.deadline, ChronoUnit.DAYS)
+        val formattedDeadline = config.deadline.format(
+            DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+        )
 
         setBackgroundColor(
-            if (isOverdue) GlassEffectDefaults.bgOverdueArgb
-            else GlassEffectDefaults.bgNormalArgb
+            if (isOverdue) OVERDUE_BG else NORMAL_BG
         )
 
         val outerLayout = LinearLayout(context).apply {
@@ -45,7 +47,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
         outerLayout.addView(iconView(isOverdue))
         outerLayout.addView(titleSection(isOverdue, config.project))
         outerLayout.addView(amountCard(isOverdue, config.amount))
-        outerLayout.addView(deadlineSection(isOverdue, config))
+        outerLayout.addView(deadlineSection(isOverdue, formattedDeadline, daysRemaining))
         outerLayout.addView(freelancerSection(config.freelancer))
         outerLayout.addView(bottomSpacer())
         outerLayout.addView(footerView(isOverdue))
@@ -57,6 +59,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
         )
         scrollView.addView(outerLayout)
         addView(scrollView)
+        attached = true
     }
 
     private fun topSpacer(): View = View(context).apply {
@@ -84,13 +87,12 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
 
             setImageDrawable(ResourcesCompat.getDrawable(resources, iconRes, null))
             setColorFilter(
-                if (isOverdue) GlassEffectDefaults.accentOverdueArgb
-                else GlassEffectDefaults.accentNormalArgb,
+                if (isOverdue) OVERDUE_ACCENT else NORMAL_ACCENT,
                 android.graphics.PorterDuff.Mode.SRC_IN
             )
-            val size = dpToPx(GlassEffectDefaults.iconSizeDp)
+            val size = dpToPx(ICON_SIZE_DP)
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp)
+                bottomMargin = dpToPx(SECTION_SPACING_DP)
             }
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
@@ -103,13 +105,12 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp) }
+            ).apply { bottomMargin = dpToPx(SECTION_SPACING_DP) }
 
             addView(TextView(context).apply {
-                text = if (isOverdue) GlassEffectDefaults.titleOverdue
-                else GlassEffectDefaults.titleLocked
+                text = if (isOverdue) TITLE_OVERDUE else TITLE_LOCKED
                 textSize = 20f
-                setTextColor(GlassEffectDefaults.accentNormalArgb)
+                setTextColor(NORMAL_ACCENT)
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
             })
@@ -117,7 +118,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             addView(TextView(context).apply {
                 text = project
                 textSize = 14f
-                setTextColor(dimArgb())
+                setTextColor(DIM_ACCENT)
                 gravity = Gravity.CENTER
             })
         }
@@ -130,29 +131,24 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp) }
+            ).apply { bottomMargin = dpToPx(SECTION_SPACING_DP) }
 
             val cardBg = GradientDrawable().apply {
-                setColor(
-                    android.graphics.Color.argb(
-                        (255 * GlassEffectDefaults.cardBgAlpha).toInt(),
-                        255, 255, 255
-                    )
-                )
+                setColor(android.graphics.Color.argb(CARD_BG_ALPHA, 255, 255, 255))
                 cornerRadius = dpToPx(20).toFloat()
             }
             setPadding(
-                dpToPx(GlassEffectDefaults.cardHorizontalPaddingDp),
-                dpToPx(GlassEffectDefaults.cardVerticalPaddingDp),
-                dpToPx(GlassEffectDefaults.cardHorizontalPaddingDp),
-                dpToPx(GlassEffectDefaults.cardVerticalPaddingDp)
+                dpToPx(CARD_HORIZONTAL_PADDING_DP),
+                dpToPx(CARD_VERTICAL_PADDING_DP),
+                dpToPx(CARD_HORIZONTAL_PADDING_DP),
+                dpToPx(CARD_VERTICAL_PADDING_DP)
             )
             background = cardBg
 
             addView(TextView(context).apply {
-                text = GlassEffectDefaults.labelAmountDue
+                text = LABEL_AMOUNT_DUE
                 textSize = 12f
-                setTextColor(dimArgb())
+                setTextColor(DIM_ACCENT)
                 letterSpacing = 0.08f
                 gravity = Gravity.CENTER
             })
@@ -161,8 +157,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
                 text = amount
                 textSize = 42f
                 setTextColor(
-                    if (isOverdue) GlassEffectDefaults.accentOverdueArgb
-                    else GlassEffectDefaults.accentNormalArgb
+                    if (isOverdue) OVERDUE_ACCENT else NORMAL_ACCENT
                 )
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
@@ -172,7 +167,8 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
 
     private fun deadlineSection(
         isOverdue: Boolean,
-        config: GlassEffectConfig
+        formattedDeadline: String,
+        daysRemaining: Long
     ): LinearLayout {
         return LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -180,31 +176,28 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp) }
+            ).apply { bottomMargin = dpToPx(SECTION_SPACING_DP) }
 
             addView(TextView(context).apply {
-                text = if (isOverdue) GlassEffectDefaults.labelDeadlineWas
-                else GlassEffectDefaults.labelDeadline
+                text = if (isOverdue) LABEL_DEADLINE_WAS else LABEL_DEADLINE
                 textSize = 12f
-                setTextColor(dimArgb())
+                setTextColor(DIM_ACCENT)
                 letterSpacing = 0.08f
                 gravity = Gravity.CENTER
             })
 
             addView(TextView(context).apply {
-                text = config.formattedDeadline
+                text = formattedDeadline
                 textSize = 16f
                 setTextColor(
-                    if (isOverdue) GlassEffectDefaults.accentOverdueArgb
-                    else GlassEffectDefaults.accentNormalArgb
+                    if (isOverdue) OVERDUE_ACCENT else NORMAL_ACCENT
                 )
                 gravity = Gravity.CENTER
             })
 
             addView(TextView(context).apply {
-                val days = config.daysRemaining
-                text = if (isOverdue) GlassEffectDefaults.overdueSuffix
-                else "${days} day${if (days == 1L) "" else "s"} remaining"
+                text = if (isOverdue) OVERDUE_SUFFIX
+                else "${daysRemaining} day${if (daysRemaining == 1L) "" else "s"} remaining"
                 textSize = 14f
                 setTextColor(
                     if (isOverdue)
@@ -212,7 +205,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
                             (255 * 0.8f).toInt(),
                             0xCC, 0x00, 0x00
                         )
-                    else dimArgb()
+                    else DIM_ACCENT
                 )
                 gravity = Gravity.CENTER
             })
@@ -226,12 +219,12 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp) }
+            ).apply { bottomMargin = dpToPx(SECTION_SPACING_DP) }
 
             addView(TextView(context).apply {
-                text = GlassEffectDefaults.labelDeveloper
+                text = LABEL_DEVELOPER
                 textSize = 12f
-                setTextColor(dimArgb())
+                setTextColor(DIM_ACCENT)
                 letterSpacing = 0.08f
                 gravity = Gravity.CENTER
             })
@@ -239,7 +232,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             addView(TextView(context).apply {
                 text = freelancer
                 textSize = 16f
-                setTextColor(GlassEffectDefaults.accentNormalArgb)
+                setTextColor(NORMAL_ACCENT)
                 gravity = Gravity.CENTER
             })
         }
@@ -247,49 +240,66 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
 
     private fun footerView(isOverdue: Boolean): TextView {
         return TextView(context).apply {
-            text = if (isOverdue) GlassEffectDefaults.footerOverdue
-            else GlassEffectDefaults.footerLocked
+            text = if (isOverdue) FOOTER_OVERDUE else FOOTER_LOCKED
             textSize = 12f
-            setTextColor(veryDimArgb())
+            setTextColor(VERY_DIM_ACCENT)
             gravity = Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                bottomMargin = dpToPx(GlassEffectDefaults.sectionSpacingDp)
-                leftMargin = dpToPx(GlassEffectDefaults.horizontalMarginDp)
-                rightMargin = dpToPx(GlassEffectDefaults.horizontalMarginDp)
+                bottomMargin = dpToPx(SECTION_SPACING_DP)
+                leftMargin = dpToPx(HORIZONTAL_MARGIN_DP)
+                rightMargin = dpToPx(HORIZONTAL_MARGIN_DP)
             }
         }
     }
 
-    private fun dimArgb(): Int =
-        android.graphics.Color.argb(
-            (255 * GlassEffectDefaults.dimAlpha).toInt(), 255, 255, 255
-        )
-
-    private fun veryDimArgb(): Int =
-        android.graphics.Color.argb(
-            (255 * GlassEffectDefaults.veryDimAlpha).toInt(), 255, 255, 255
-        )
-
     companion object {
-        fun wrap(activity: Activity) {
-            if (!GlassEffectConfig.isUnlocked()) {
-                val overlay = GlassEffectLayout(activity)
-                overlay.install()
-                activity.addContentView(
-                    overlay,
-                    LayoutParams(
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT
-                    )
-                )
-            }
-        }
+        private val NORMAL_BG = android.graphics.Color.parseColor("#FF1A1A1A")
+        private val OVERDUE_BG = android.graphics.Color.parseColor("#FF2A0A0A")
+        private val NORMAL_ACCENT = -0x1
+        private val OVERDUE_ACCENT = android.graphics.Color.parseColor("#FFCC0000")
 
-        fun installOn(activity: Activity) = wrap(activity)
+        private val DIM_ACCENT = android.graphics.Color.argb(
+            (255 * 0.5f).toInt(), 255, 255, 255
+        )
+        private val VERY_DIM_ACCENT = android.graphics.Color.argb(
+            (255 * 0.4f).toInt(), 255, 255, 255
+        )
+
+        private const val CARD_BG_ALPHA = 20
+
+        private const val LABEL_AMOUNT_DUE = "AMOUNT DUE"
+        private const val LABEL_DEADLINE = "DEADLINE"
+        private const val LABEL_DEADLINE_WAS = "DEADLINE WAS"
+        private const val LABEL_DEVELOPER = "DEVELOPER"
+        private const val TITLE_LOCKED = "Payment Required"
+        private const val TITLE_OVERDUE = "Payment Overdue"
+        private const val FOOTER_LOCKED =
+            "This app is locked pending payment.\nContact the developer to unlock."
+        private const val FOOTER_OVERDUE =
+            "This app is locked. Payment deadline has passed.\nContact the developer immediately."
+        private const val OVERDUE_SUFFIX = "Payment is overdue"
+
+        private const val ICON_SIZE_DP = 60
+        private const val SECTION_SPACING_DP = 32
+        private const val CARD_HORIZONTAL_PADDING_DP = 40
+        private const val CARD_VERTICAL_PADDING_DP = 24
+        private const val HORIZONTAL_MARGIN_DP = 32
+
+        fun wrap(activity: Activity, config: GlassefcConfig) {
+            val overlay = GlassEffectLayout(activity)
+            overlay.install(config)
+            activity.addContentView(
+                overlay,
+                LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT
+                )
+            )
+        }
 
         fun dpToPx(dp: Int): Int {
             return (dp * android.content.res.Resources.getSystem().displayMetrics.density).toInt()

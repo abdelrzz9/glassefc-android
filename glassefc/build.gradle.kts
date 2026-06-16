@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.glassefc"
+    namespace = "com.glassefc.sdk"
     compileSdk = 34
 
     defaultConfig {
@@ -29,15 +29,13 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.appcompat)
 
-    // Compose (optional — only needed if host app uses Compose)
     compileOnly(platform(libs.androidx.compose.bom))
     compileOnly(libs.androidx.ui)
     compileOnly(libs.androidx.ui.graphics)
     compileOnly(libs.androidx.ui.tooling.preview)
     compileOnly(libs.androidx.material3)
     compileOnly(libs.androidx.material.icons.core)
-
-    // View system support
-    implementation(libs.androidx.appcompat)
 }
