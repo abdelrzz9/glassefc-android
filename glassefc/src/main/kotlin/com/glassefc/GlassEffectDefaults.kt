@@ -13,6 +13,7 @@ internal object GlassEffectDefaults {
     // Accent colors
     val accentNormal = Color.White
     val accentOverdue = Color(0xFFCC0000)
+    val accentNormalArgb = ArgbColor.parseColor("#FFFFFFFF")
     val accentOverdueArgb = ArgbColor.parseColor("#FFCC0000")
 
     // Text alpha multipliers
