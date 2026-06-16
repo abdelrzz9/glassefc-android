@@ -1,0 +1,2 @@
+com.glassefc
+string app_name

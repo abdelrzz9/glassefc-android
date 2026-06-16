@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.glassefc.sample.app-mergeDebugResources-46:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "/home/abderazek/.gradle/caches/transforms-4/d7d788f7a6dc34a773539b2a39362a0c/transformed/appcompat-1.7.0/res/values-ldltr-v21/values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

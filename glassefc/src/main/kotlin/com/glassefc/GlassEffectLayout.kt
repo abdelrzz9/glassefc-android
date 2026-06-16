@@ -3,6 +3,7 @@ package com.glassefc
 import android.app.Activity
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
@@ -116,7 +117,7 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
                 text = if (isOverdue) "Payment Overdue" else "Payment Required"
                 textSize = 20f
                 setTextColor(Color.WHITE)
-                typeface = ResourcesCompat.getFont(context, android.R.font.sans_serif_medium)
+                typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
             })
 
@@ -160,11 +161,11 @@ class GlassEffectLayout(context: Context) : FrameLayout(context) {
             text = amount
             textSize = 42f
             setTextColor(if (isOverdue) Color.RED else Color.WHITE)
-            typeface = ResourcesCompat.getFont(context, android.R.font.sans_serif_medium)
-            gravity = Gravity.CENTER
-        })
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+            })
 
-        return card
+            return card
     }
 
     private fun createDeadlineSection(
