@@ -36,6 +36,7 @@ dependencies {
     compileOnly(libs.androidx.ui.graphics)
     compileOnly(libs.androidx.ui.tooling.preview)
     compileOnly(libs.androidx.material3)
+    compileOnly(libs.androidx.material.icons.core)
 
     // View system support
     implementation(libs.androidx.appcompat)

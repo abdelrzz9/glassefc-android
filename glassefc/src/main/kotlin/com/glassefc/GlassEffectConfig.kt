@@ -2,39 +2,60 @@ package com.glassefc
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 object GlassEffectConfig {
-    var isUnlocked = false
-    var freelancer = "Your Name"
-    var project    = "Project Name"
-    var amount     = "500 USD"
-    var deadline   = "2025-01-01"
+    const val freelancer = "Your Name"
+    const val project = "Project Name"
+    const val amount = "500 USD"
+    const val deadline = "2025-01-01"
 
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    private const val UNLOCK_KEY = "glassefc-unlock-2024"
+    private val dateFormatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd", Locale.ENGLISH)
 
-    val parsedDeadline: LocalDate
-        get() = try {
+    private val parsedDeadline: LocalDate by lazy {
+        try {
             LocalDate.parse(deadline, dateFormatter)
-        } catch (_: Exception) {
-            LocalDate.MAX
+        } catch (e: DateTimeParseException) {
+            error(
+                "GlassEffectConfig.deadline must be in yyyy-MM-dd format, " +
+                    "but was: '$deadline'"
+            )
         }
+    }
 
-    val isOverdue: Boolean
-        get() = !isUnlocked && LocalDate.now() > parsedDeadline
+    init {
+        parsedDeadline
+    }
 
-    val daysRemaining: Long
+    @Volatile
+    private var _isUnlocked = false
+
+    fun isUnlocked(): Boolean = _isUnlocked
+
+    fun unlock(key: String): Boolean {
+        if (key == UNLOCK_KEY) {
+            _isUnlocked = true
+            return true
+        }
+        return false
+    }
+
+    internal fun forceUnlock() {
+        _isUnlocked = true
+    }
+
+    internal val isOverdue: Boolean
+        get() = !_isUnlocked && LocalDate.now() > parsedDeadline
+
+    internal val daysRemaining: Long
         get() = LocalDate.now().until(parsedDeadline, ChronoUnit.DAYS)
 
-    val formattedDeadline: String
-        get() = try {
-            val date = LocalDate.parse(deadline, dateFormatter)
-            val months = arrayOf(
-                "jan", "feb", "mar", "apr", "may", "jun",
-                "jul", "aug", "sep", "oct", "nov", "dec"
-            )
-            "${date.dayOfMonth} ${months[date.monthValue - 1]} ${date.year}"
-        } catch (_: Exception) {
-            deadline
-        }
+    internal val formattedDeadline: String
+        get() = parsedDeadline.format(
+            DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+        )
 }
